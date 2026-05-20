@@ -1,0 +1,67 @@
+site_name: Desbravador — Documentação Técnica
+site_description: Requisitos de hardware, software e configuração dos sistemas Desbravador
+site_author: Desbravador Software Ltda.
+site_url: https://docs.desbravador.com.br
+
+theme:
+  name: material
+  language: pt
+  palette:
+    - scheme: default
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/brightness-7
+        name: Modo escuro
+    - scheme: slate
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/brightness-4
+        name: Modo claro
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - toc.follow
+
+plugins:
+  - search:
+      lang: pt
+
+markdown_extensions:
+  - admonition
+  - tables
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+extra_javascript:
+  - https://unpkg.com/mermaid@11/dist/mermaid.min.js
+
+nav:
+  - Início: index.md
+  - Desbravador 4.1 / 3.1 / 3.0 Smart:
+    - Instalação Local:
+      - Requisitos de Hardware: desbravador-41/local/requisitos-hardware.md
+    - Instalação Cloud:
+      - Requisitos Cloud (AutoSky): desbravador-41/cloud/requisitos-cloud.md
+  - Periféricos Homologados:
+    - Fechaduras: _shared/fechaduras-homologadas.md
+    - Impressoras: _shared/impressoras-homologadas.md
+    - Pinpads: _shared/pinpads-homologados.md
+
+extra:
+  social:
+    - icon: fontawesome/solid/globe
+      link: https://www.desbravador.com.br
