@@ -126,7 +126,16 @@ async function fetchPageContent(path: string): Promise<string | null> {
     const vpDoc = doc.querySelector('.vp-doc')
     if (!vpDoc) return null
 
-    // Make relative links absolute so they appear correctly in the print window
+    // Remove heading anchor links (#) that look bad in print
+    vpDoc.querySelectorAll('.header-anchor').forEach((el) => el.remove())
+
+    // Remove tabindex attributes (not needed for print)
+    vpDoc.querySelectorAll('[tabindex]').forEach((el) => el.removeAttribute('tabindex'))
+
+    // Remove any embedded scripts
+    vpDoc.querySelectorAll('script').forEach((el) => el.remove())
+
+    // Make relative hrefs absolute
     const origin = window.location.origin
     const base = (site.value.base || '/').replace(/\/$/, '')
     vpDoc.querySelectorAll('a[href]').forEach((el) => {
@@ -158,18 +167,24 @@ async function printDoc(product: Product) {
     ])
 
     let body = ''
+    let isFirstSection = true
 
     docSections.forEach((content) => {
       if (content) {
-        body += `<section class="doc-section">${content}</section>`
+        const cls = isFirstSection ? 'doc-section first-section' : 'doc-section'
+        body += `<section class="${cls}">${content}</section>`
+        isFirstSection = false
       }
     })
 
     const hasPeripherals = peripheralSections.some((s) => s !== null)
     if (hasPeripherals) {
-      body += `<section class="doc-section appendix-cover">
-        <h1>Anexo — Periféricos Homologados</h1>
-        <p>Relação de periféricos homologados para uso com os sistemas Desbravador.</p>
+      body += `<section class="doc-section appendix-divider">
+        <div class="appendix-divider-inner">
+          <p class="appendix-label">Anexo</p>
+          <h1>Periféricos Homologados</h1>
+          <p>Relação de periféricos homologados para uso com os sistemas Desbravador.</p>
+        </div>
       </section>`
       peripheralSections.forEach((content) => {
         if (content) {
@@ -184,6 +199,12 @@ async function printDoc(product: Product) {
       return
     }
 
+    const dateStr = new Date().toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    })
+
     printWindow.document.write(`<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -191,120 +212,283 @@ async function printDoc(product: Product) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${product.name} — Documentação Técnica Desbravador</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    @page {
+      size: A4;
+      margin: 2cm 2.5cm 2.5cm 2.5cm;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 12pt;
-      line-height: 1.6;
-      color: #1a1a1a;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.65;
+      color: #1c1c1c;
       background: #fff;
     }
 
+    /* ── Capa ── */
     .cover {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 4rem 3rem;
-      border-bottom: 3px solid #1e6ec8;
+      padding: 6rem 0 4rem;
+      border-bottom: 4px solid #1a5fa8;
+      margin-bottom: 0;
+      break-after: page;
       page-break-after: always;
     }
-    .cover-logo { font-size: 0.9rem; color: #666; margin-bottom: 3rem; text-transform: uppercase; letter-spacing: 0.05em; }
-    .cover h1 { font-size: 2.4rem; color: #1e6ec8; line-height: 1.2; margin-bottom: 1rem; }
-    .cover p { font-size: 1rem; color: #555; }
-    .cover-date { margin-top: 4rem; font-size: 0.85rem; color: #999; }
+    .cover-eyebrow {
+      font-size: 8.5pt;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin-bottom: 2.5rem;
+    }
+    .cover-title {
+      font-size: 26pt;
+      font-weight: 700;
+      color: #1a5fa8;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+    }
+    .cover-subtitle {
+      font-size: 11pt;
+      color: #4b5563;
+      margin-bottom: 0.4rem;
+    }
+    .cover-date {
+      margin-top: 3rem;
+      font-size: 8.5pt;
+      color: #9ca3af;
+    }
 
+    /* ── Seções de conteúdo ── */
     .doc-section {
-      padding: 2rem 3rem;
+      break-before: page;
       page-break-before: always;
+      padding-top: 0.5rem;
     }
-    .doc-section:first-of-type { page-break-before: avoid; }
+    .first-section {
+      break-before: auto;
+      page-break-before: auto;
+    }
 
-    .appendix-cover {
+    /* ── Divisor do Anexo ── */
+    .appendix-divider {
       display: flex;
-      flex-direction: column;
-      justify-content: center;
-      min-height: 40vh;
-      border-top: 2px solid #e5e7eb;
-      border-bottom: 2px solid #e5e7eb;
+      align-items: center;
+      min-height: 60mm;
     }
-    .appendix-cover h1 { font-size: 2rem; color: #333; margin-bottom: 0.75rem; }
-    .appendix-cover p { color: #666; }
-
-    h1 { font-size: 1.8rem; color: #1a1a1a; margin: 1.5rem 0 0.75rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; }
-    h2 { font-size: 1.4rem; color: #1a1a1a; margin: 1.25rem 0 0.5rem; }
-    h3 { font-size: 1.15rem; color: #333; margin: 1rem 0 0.4rem; }
-    h4 { font-size: 1rem; color: #444; margin: 0.75rem 0 0.3rem; }
-
-    p { margin: 0.6rem 0; }
-    ul, ol { padding-left: 1.5rem; margin: 0.5rem 0; }
-    li { margin: 0.25rem 0; }
-
-    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 11pt; }
-    th { background: #1e6ec8; color: #fff; padding: 0.5rem 0.75rem; text-align: left; }
-    td { padding: 0.45rem 0.75rem; border: 1px solid #d1d5db; vertical-align: top; }
-    tr:nth-child(even) td { background: #f9fafb; }
-
-    code {
-      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    .appendix-divider-inner {
+      border-left: 5px solid #1a5fa8;
+      padding: 1.5rem 2rem;
+    }
+    .appendix-label {
+      font-size: 8pt;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #1a5fa8;
+      margin-bottom: 0.5rem;
+    }
+    .appendix-divider-inner h1 {
+      font-size: 20pt;
+      color: #111827;
+      border: none;
+      padding: 0;
+      margin: 0 0 0.5rem;
+    }
+    .appendix-divider-inner p {
+      color: #6b7280;
       font-size: 10pt;
+      margin: 0;
+    }
+
+    /* ── Tipografia ── */
+    h1 {
+      font-size: 16pt;
+      font-weight: 700;
+      color: #111827;
+      margin: 1.6rem 0 0.6rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1.5px solid #e5e7eb;
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+    h2 {
+      font-size: 13pt;
+      font-weight: 700;
+      color: #1f2937;
+      margin: 1.3rem 0 0.5rem;
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+    h3 {
+      font-size: 11pt;
+      font-weight: 700;
+      color: #374151;
+      margin: 1rem 0 0.35rem;
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+    h4 {
+      font-size: 10.5pt;
+      font-weight: 600;
+      color: #4b5563;
+      margin: 0.8rem 0 0.3rem;
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+
+    p { margin: 0.5rem 0; }
+
+    ul, ol { padding-left: 1.4rem; margin: 0.4rem 0; }
+    li { margin: 0.2rem 0; }
+    li > ul, li > ol { margin: 0.2rem 0; }
+
+    strong { font-weight: 700; }
+    em { font-style: italic; }
+
+    hr {
+      border: none;
+      border-top: 1px solid #e5e7eb;
+      margin: 1.2rem 0;
+    }
+
+    /* ── Tabelas ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.8rem 0 1rem;
+      font-size: 9.5pt;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    thead { break-inside: avoid; page-break-inside: avoid; }
+    th {
+      background: #1a5fa8;
+      color: #fff;
+      padding: 0.45rem 0.65rem;
+      text-align: left;
+      font-weight: 600;
+      font-size: 9pt;
+      border: 1px solid #1a5fa8;
+    }
+    td {
+      padding: 0.4rem 0.65rem;
+      border: 1px solid #d1d5db;
+      vertical-align: top;
+      line-height: 1.5;
+    }
+    tr { break-inside: avoid; page-break-inside: avoid; }
+    tr:nth-child(even) td { background: #f9fafb; }
+    tr:hover td { background: inherit; }
+
+    /* ── Código ── */
+    code {
+      font-family: 'SFMono-Regular', 'Cascadia Code', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 9pt;
       background: #f3f4f6;
-      padding: 0.15em 0.4em;
+      color: #1f2937;
+      padding: 0.1em 0.35em;
       border-radius: 3px;
+      border: 1px solid #e5e7eb;
     }
     pre {
-      background: #f3f4f6;
-      padding: 1rem;
-      border-radius: 4px;
-      overflow-x: auto;
+      background: #f8f9fa;
+      border: 1px solid #e5e7eb;
+      border-radius: 5px;
+      padding: 0.85rem 1rem;
       margin: 0.75rem 0;
-      font-size: 10pt;
+      font-size: 9pt;
+      white-space: pre-wrap;
+      word-break: break-word;
+      break-inside: avoid;
+      page-break-inside: avoid;
     }
-    pre code { background: none; padding: 0; }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: inherit;
+    }
 
+    /* ── Blockquotes (⚠️ / ℹ️) ── */
     blockquote {
       border-left: 4px solid #f59e0b;
-      padding: 0.5rem 1rem;
-      margin: 0.75rem 0;
-      color: #555;
       background: #fffbeb;
+      padding: 0.6rem 1rem;
+      margin: 0.75rem 0;
+      border-radius: 0 4px 4px 0;
+      break-inside: avoid;
+      page-break-inside: avoid;
     }
-    blockquote p { margin: 0; }
+    blockquote p { margin: 0; color: #78350f; }
 
-    a { color: #1e6ec8; text-decoration: none; }
-
+    /* ── Custom blocks VitePress ── */
     .custom-block {
-      padding: 0.75rem 1rem;
-      border-radius: 4px;
+      padding: 0.7rem 1rem;
+      border-radius: 5px;
       margin: 0.75rem 0;
       border-left: 4px solid;
+      break-inside: avoid;
+      page-break-inside: avoid;
     }
+    .custom-block-title {
+      font-weight: 700;
+      font-size: 9.5pt;
+      margin-bottom: 0.3rem;
+    }
+    .custom-block.tip    { border-color: #10b981; background: #ecfdf5; }
+    .custom-block.tip    .custom-block-title { color: #065f46; }
+    .custom-block.info   { border-color: #3b82f6; background: #eff6ff; }
+    .custom-block.info   .custom-block-title { color: #1e40af; }
     .custom-block.warning { border-color: #f59e0b; background: #fffbeb; }
-    .custom-block.info, .custom-block.tip { border-color: #3b82f6; background: #eff6ff; }
-    .custom-block.danger { border-color: #ef4444; background: #fef2f2; }
+    .custom-block.warning .custom-block-title { color: #92400e; }
+    .custom-block.danger  { border-color: #ef4444; background: #fef2f2; }
+    .custom-block.danger  .custom-block-title { color: #991b1b; }
 
+    /* ── Links ── */
+    a { color: #1a5fa8; text-decoration: none; }
+
+    /* ── SVG / Mermaid ── */
+    svg {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0.75rem auto;
+    }
+    .mermaid { text-align: center; }
+
+    /* ── Ocultar no print: links de âncora, botão editar ── */
     @media print {
-      body { font-size: 11pt; }
-      .cover { page-break-after: always; }
-      .doc-section { page-break-before: always; }
-      .doc-section:first-of-type { page-break-before: avoid; }
-      a::after { content: none; }
+      .header-anchor { display: none; }
+      a[href]::after { content: none !important; }
+      .doc-section { break-before: page; page-break-before: always; }
+      .first-section { break-before: auto; page-break-before: auto; }
+      h1, h2, h3, h4 { break-after: avoid; page-break-after: avoid; }
+      table, pre, blockquote, .custom-block {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
     }
   </style>
 </head>
 <body>
   <div class="cover">
-    <div class="cover-logo">Desbravador Software Ltda. — Documentação Técnica</div>
-    <h1>${product.name}</h1>
-    <p>Requisitos de hardware, software e configuração.</p>
-    <p>Inclui periféricos homologados como anexo.</p>
-    <div class="cover-date">Gerado em ${new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+    <p class="cover-eyebrow">Desbravador Software Ltda. — Documentação Técnica</p>
+    <h1 class="cover-title">${product.name}</h1>
+    <p class="cover-subtitle">Requisitos de hardware, software e configuração</p>
+    <p class="cover-subtitle">Inclui periféricos homologados como anexo</p>
+    <p class="cover-date">Gerado em ${dateStr}</p>
   </div>
   ${body}
   <script>
     window.onload = function () {
-      setTimeout(function () { window.print(); }, 400)
+      setTimeout(function () { window.print(); }, 500)
     }
   <\/script>
 </body>
