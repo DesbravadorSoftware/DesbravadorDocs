@@ -58,9 +58,9 @@ function versionedSidebar() {
             {
               text: 'Periféricos Homologados',
               items: [
-                { text: 'Fechaduras', link: `/versoes/${d}/_shared/fechaduras-homologadas` },
-                { text: 'Impressoras', link: `/versoes/${d}/_shared/impressoras-homologadas` },
-                { text: 'Pinpads', link: `/versoes/${d}/_shared/pinpads-homologados` },
+                { text: 'Fechaduras', link: `/versoes/${d}/perifericos/fechaduras-homologadas` },
+                { text: 'Impressoras', link: `/versoes/${d}/perifericos/impressoras-homologadas` },
+                { text: 'Pinpads', link: `/versoes/${d}/perifericos/pinpads-homologados` },
               ],
             },
           ],
@@ -73,62 +73,116 @@ function versionedSidebar() {
 
 export default withMermaid(
   defineConfig({
-    title: 'Desbravador — Documentação Técnica',
-    description: 'Requisitos de hardware, software e configuração dos sistemas Desbravador',
+    base: '/DesbravadorDocs/',
+    title: 'Desbravador Docs',
+    description: 'Documentação técnica dos sistemas Desbravador',
     lang: 'pt-BR',
 
     themeConfig: {
       logo: '/logo.png',
-      siteTitle: false,
+      siteTitle: 'Desbravador Docs',
 
-      nav: [
-        { text: 'Início', link: '/' },
-        {
-          text: '⚡ Versão Atual',
-          items: [
-            { text: '⚡ Atual (Mai/2026)', link: '/desbravador-41/local/requisitos-hardware' },
-            { text: '─────────────', link: '/versoes/' },
-            { text: '📁 Versões Anteriores', link: '/versoes/' },
-            ...versions,
-          ],
-        },
-      ],
+      nav: [],
 
       sidebar: {
+        '/exemplo-relatorio': [
+          { text: 'Exemplo de Relatório', link: '/exemplo-relatorio' },
+        ],
         '/desbravador-41/': [
           {
-            text: 'Desbravador 4.1 / 3.1 / 3.0 Smart',
+            text: 'Instalação Local',
             items: [
-              {
-                text: 'Instalação Local',
-                items: [
-                  { text: 'Requisitos de Hardware', link: '/desbravador-41/local/requisitos-hardware' },
-                ],
-              },
-              {
-                text: 'Instalação Cloud',
-                items: [
-                  { text: 'Requisitos Cloud (AutoSky)', link: '/desbravador-41/cloud/requisitos-cloud' },
-                ],
-              },
+              { text: 'Requisitos de Hardware', link: '/desbravador-41/local/requisitos-hardware' },
             ],
           },
           {
-            text: 'Periféricos Homologados',
+            text: 'Cloud — AutoSky',
             items: [
-              { text: 'Fechaduras', link: '/_shared/fechaduras-homologadas' },
-              { text: 'Impressoras', link: '/_shared/impressoras-homologadas' },
-              { text: 'Pinpads', link: '/_shared/pinpads-homologados' },
+              { text: 'Requisitos cloud', link: '/desbravador-41/cloud/requisitos-cloud' },
             ],
           },
         ],
-        '/_shared/': [
+        '/desbravador-posfast/': [
           {
-            text: 'Periféricos Homologados',
+            text: 'Instalação Local',
             items: [
-              { text: 'Fechaduras', link: '/_shared/fechaduras-homologadas' },
-              { text: 'Impressoras', link: '/_shared/impressoras-homologadas' },
-              { text: 'Pinpads', link: '/_shared/pinpads-homologados' },
+              { text: 'Requisitos de Hardware', link: '/desbravador-posfast/local/requisitos-hardware' },
+            ],
+          },
+        ],
+        '/light-web/': [
+          {
+            text: 'SaaS / Online',
+            items: [
+              { text: 'Requisitos de hardware', link: '/light-web/local/requisitos-hardware' },
+            ],
+          },
+        ],
+        '/light-web-plus/': [
+          {
+            text: 'Instalação Local',
+            items: [
+              { text: 'Requisitos de hardware', link: '/light-web-plus/local/requisitos-hardware' },
+            ],
+          },
+        ],
+        '/gas-station/': [
+          {
+            text: 'Instalação Local',
+            items: [
+              { text: 'Requisitos de hardware', link: '/gas-station/local/requisitos-hardware' },
+            ],
+          },
+        ],
+        '/desbravador-enterprise/': [
+          {
+            text: 'Desbravador Enterprise / 4.0',
+            items: [
+              { text: 'Modalidades de implantação', link: '/desbravador-enterprise/' },
+              {
+                text: 'On-Premise — Local Total',
+                items: [
+                  { text: 'Requisitos de hardware', link: '/desbravador-enterprise/local/requisitos-hardware' },
+                ],
+              },
+              {
+                text: 'Híbrido — App local + BD nuvem',
+                items: [
+                  { text: 'Requisitos de hardware', link: '/desbravador-enterprise/hibrido/requisitos-hardware' },
+                ],
+              },
+              {
+                text: 'Cloud — AutoSky',
+                items: [
+                  { text: 'Requisitos de hardware', link: '/desbravador-enterprise/cloud/requisitos-hardware' },
+                ],
+              },
+            ],
+          },
+          {
+            text: 'Infraestrutura e Segurança',
+            items: [
+              { text: 'Portas e Firewall', link: '/infraestrutura/portas-e-firewall' },
+            ],
+          },
+        ],
+        '/perifericos/': [
+          {
+            text: 'Periféricos homologados',
+            items: [
+              { text: 'Fechaduras', link: '/perifericos/fechaduras-homologadas' },
+              { text: 'Impressoras', link: '/perifericos/impressoras-homologadas' },
+              { text: 'Pinpads', link: '/perifericos/pinpads-homologados' },
+              { text: 'Sistemas de TEF', link: '/perifericos/tef-homologados' },
+              { text: 'Dispositivos iPDV e PDV', link: '/perifericos/dispositivos-ipdv-pdv' },
+            ],
+          },
+        ],
+        '/infraestrutura/': [
+          {
+            text: 'Infraestrutura',
+            items: [
+              { text: 'Portas e Firewall', link: '/infraestrutura/portas-e-firewall' },
             ],
           },
         ],
@@ -142,6 +196,30 @@ export default withMermaid(
           },
         ],
         ...versionedSidebar(),
+      },
+
+      search: { provider: 'local' },
+
+      editLink: {
+        pattern: 'https://github.com/desbravador/docs/edit/main/docs/:path',
+        text: 'Editar esta página',
+      },
+
+      lastUpdated: { text: 'Atualizado em' },
+
+      footer: {
+        message: 'Desbravador Software Ltda.',
+        copyright: 'www.desbravador.com.br',
+      },
+
+      docFooter: {
+        prev: 'Anterior',
+        next: 'Próximo',
+      },
+
+      outline: {
+        label: 'Nesta página',
+        level: [2, 3],
       },
     },
 
