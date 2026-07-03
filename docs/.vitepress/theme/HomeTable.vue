@@ -36,13 +36,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useData, withBase } from 'vitepress'
+import { buildReportCSS } from './print/styles'
 
 const { site } = useData()
 
 interface Product {
   name: string
   primaryLink: string
-  docPages: string[]
+  docPages: Array<{ path: string; label: string }>
   hasLocal: boolean
   hasCloud: boolean
 }
@@ -52,8 +53,8 @@ const products: Product[] = [
     name: 'Desbravador 4.1 / 3.1 / 3.0 Smart',
     primaryLink: '/desbravador-41/local/requisitos-hardware',
     docPages: [
-      '/desbravador-41/local/requisitos-hardware',
-      '/desbravador-41/cloud/requisitos-cloud',
+      { path: '/desbravador-41/local/requisitos-hardware', label: 'Instalação Local' },
+      { path: '/desbravador-41/cloud/requisitos-cloud',    label: 'Cloud — AutoSky'  },
     ],
     hasLocal: true,
     hasCloud: true,
@@ -61,28 +62,36 @@ const products: Product[] = [
   {
     name: 'POS Fast by Desbravador',
     primaryLink: '/desbravador-posfast/local/requisitos-hardware',
-    docPages: ['/desbravador-posfast/local/requisitos-hardware'],
+    docPages: [
+      { path: '/desbravador-posfast/local/requisitos-hardware', label: 'Instalação Local' },
+    ],
     hasLocal: true,
     hasCloud: false,
   },
   {
     name: 'Light Web Plus / 3.0 Web Plus',
     primaryLink: '/light-web-plus/local/requisitos-hardware',
-    docPages: ['/light-web-plus/local/requisitos-hardware'],
+    docPages: [
+      { path: '/light-web-plus/local/requisitos-hardware', label: 'Instalação Local' },
+    ],
     hasLocal: true,
     hasCloud: true,
   },
   {
     name: 'Gas Station / Liquor Store',
     primaryLink: '/gas-station/local/requisitos-hardware',
-    docPages: ['/gas-station/local/requisitos-hardware'],
+    docPages: [
+      { path: '/gas-station/local/requisitos-hardware', label: 'Instalação Local' },
+    ],
     hasLocal: true,
     hasCloud: false,
   },
   {
     name: 'Easy Web / Light Web / 3.0 Web',
     primaryLink: '/light-web/local/requisitos-hardware',
-    docPages: ['/light-web/local/requisitos-hardware'],
+    docPages: [
+      { path: '/light-web/local/requisitos-hardware', label: 'Requisitos' },
+    ],
     hasLocal: false,
     hasCloud: true,
   },
@@ -90,10 +99,10 @@ const products: Product[] = [
     name: 'Desbravador Enterprise / 4.0',
     primaryLink: '/desbravador-enterprise/',
     docPages: [
-      '/desbravador-enterprise/',
-      '/desbravador-enterprise/local/requisitos-hardware',
-      '/desbravador-enterprise/hibrido/requisitos-hardware',
-      '/desbravador-enterprise/cloud/requisitos-hardware',
+      { path: '/desbravador-enterprise/',                          label: 'Visão Geral'            },
+      { path: '/desbravador-enterprise/local/requisitos-hardware', label: 'On-Premise'             },
+      { path: '/desbravador-enterprise/hibrido/requisitos-hardware', label: 'Híbrido'             },
+      { path: '/desbravador-enterprise/cloud/requisitos-hardware', label: 'Cloud — AutoSky'       },
     ],
     hasLocal: true,
     hasCloud: true,
@@ -101,15 +110,17 @@ const products: Product[] = [
 ]
 
 const peripheralPages = [
-  { title: 'Fechaduras e Tarifadores Homologados', path: '/perifericos/fechaduras-homologadas' },
-  { title: 'Impressoras Homologadas', path: '/perifericos/impressoras-homologadas' },
-  { title: 'Pinpads Homologados', path: '/perifericos/pinpads-homologados' },
-  { title: 'Sistemas de TEF Homologados', path: '/perifericos/tef-homologados' },
-  { title: 'Dispositivos iPDV e PDV Homologados', path: '/perifericos/dispositivos-ipdv-pdv' },
-  { title: 'SAT / MFE Homologados', path: '/perifericos/sat-mfe-homologados' },
+  { path: '/perifericos/fechaduras-homologadas',  label: 'Fechaduras e Tarifadores Homologados' },
+  { path: '/perifericos/impressoras-homologadas', label: 'Impressoras Homologadas'              },
+  { path: '/perifericos/pinpads-homologados',     label: 'Pinpads Homologados'                 },
+  { path: '/perifericos/tef-homologados',         label: 'Sistemas de TEF Homologados'         },
+  { path: '/perifericos/dispositivos-ipdv-pdv',   label: 'Dispositivos iPDV e PDV Homologados' },
+  { path: '/perifericos/sat-mfe-homologados',     label: 'SAT / MFE Homologados'               },
 ]
 
 const printing = ref<string | null>(null)
+
+// ── Fetch ─────────────────────────────────────────────────────────────
 
 function buildUrl(path: string): string {
   const base = (site.value.base || '/').replace(/\/$/, '')
@@ -126,29 +137,22 @@ async function fetchPageContent(path: string): Promise<string | null> {
     const vpDoc = doc.querySelector('.vp-doc')
     if (!vpDoc) return null
 
-    // Remove heading anchor links (#) that look bad in print
-    vpDoc.querySelectorAll('.header-anchor').forEach((el) => el.remove())
+    // Limpar elementos que não fazem sentido no PDF
+    vpDoc.querySelectorAll('.header-anchor, [tabindex], script').forEach((el) => {
+      if (el.tagName === 'A' && el.classList.contains('header-anchor')) el.remove()
+      else if (el.tagName === 'SCRIPT') el.remove()
+      else el.removeAttribute('tabindex')
+    })
 
-    // Remove tabindex attributes (not needed for print)
-    vpDoc.querySelectorAll('[tabindex]').forEach((el) => el.removeAttribute('tabindex'))
-
-    // Remove any embedded scripts
-    vpDoc.querySelectorAll('script').forEach((el) => el.remove())
-
-    // Make relative hrefs absolute
+    // Tornar links e imagens absolutos
     const origin = window.location.origin
-    const base = (site.value.base || '/').replace(/\/$/, '')
     vpDoc.querySelectorAll('a[href]').forEach((el) => {
       const href = el.getAttribute('href')
-      if (href && href.startsWith('/')) {
-        el.setAttribute('href', `${origin}${href}`)
-      }
+      if (href?.startsWith('/')) el.setAttribute('href', `${origin}${href}`)
     })
     vpDoc.querySelectorAll('img[src]').forEach((el) => {
       const src = el.getAttribute('src')
-      if (src && src.startsWith('/')) {
-        el.setAttribute('src', `${origin}${src}`)
-      }
+      if (src?.startsWith('/')) el.setAttribute('src', `${origin}${src}`)
     })
 
     return vpDoc.innerHTML
@@ -157,343 +161,276 @@ async function fetchPageContent(path: string): Promise<string | null> {
   }
 }
 
+// ── Construção do HTML profissional ───────────────────────────────────
+
+function buildHeaderHTML(product: Product, logoUrl: string | null, dateStr: string): string {
+  const logoEl = logoUrl
+    ? `<img class="pr-hdr-logo" src="${logoUrl}" alt="Desbravador" /><div class="pr-hdr-sep"></div>`
+    : ''
+  return `
+<header class="pr-page-header">
+  <div class="pr-hdr-left">
+    ${logoEl}
+    <span class="pr-hdr-title">${product.name}</span>
+    <span class="pr-hdr-period">Documentação Técnica</span>
+  </div>
+  <div class="pr-hdr-right">Desbravador Software Ltda.<br>${dateStr}</div>
+</header>`
+}
+
+function buildFooterHTML(): string {
+  return `
+<footer class="pr-page-footer">
+  <span class="pr-ftr-company">Desbravador Software Ltda.</span>
+  <span class="pr-ftr-confidential">Uso Técnico</span>
+  <span class="pr-ftr-page"></span>
+</footer>`
+}
+
+function buildCoverHTML(product: Product, logoUrl: string | null, dateStr: string): string {
+  const logoEl = logoUrl
+    ? `<img class="pr-cover-logo" src="${logoUrl}" alt="Desbravador" />`
+    : `<span class="pr-cover-logo-name">Desbravador</span>`
+
+  return `
+<div class="pr-cover">
+  <div class="pr-cover-top">
+    <div class="pr-cover-logo-wrap">${logoEl}</div>
+  </div>
+  <div class="pr-cover-body">
+    <div class="pr-cover-label">Documentação Técnica</div>
+    <h1 class="pr-cover-title">${product.name}</h1>
+    <p class="pr-cover-subtitle">Requisitos de hardware, software e configuração.<br>
+    Inclui periféricos homologados como anexo.</p>
+    <div class="pr-cover-accent-bar"></div>
+    <div class="pr-cover-meta">
+      <div class="pr-cover-meta-item">
+        <span class="pr-cover-meta-label">Modalidades</span>
+        <span class="pr-cover-meta-value">${
+          product.docPages.map((p) => p.label).join(' · ')
+        }</span>
+      </div>
+      <div class="pr-cover-meta-item">
+        <span class="pr-cover-meta-label">Data de Geração</span>
+        <span class="pr-cover-meta-value">${dateStr}</span>
+      </div>
+      <div class="pr-cover-meta-item">
+        <span class="pr-cover-meta-label">Empresa</span>
+        <span class="pr-cover-meta-value">Desbravador Software Ltda.</span>
+      </div>
+    </div>
+    <div class="pr-cover-notes">
+      Este documento é gerado automaticamente a partir da documentação técnica oficial.
+      Para a versão mais atualizada, acesse docs.desbravador.com.br.
+    </div>
+  </div>
+</div>`
+}
+
+function buildAppendixDividerHTML(): string {
+  return `
+<div class="pr-section pr-page-break appendix-divider-wrap">
+  <div class="appendix-divider-box">
+    <p class="pr-section-eyebrow">Anexo</p>
+    <h2 class="pr-section-title" style="font-size:20pt;margin:0 0 3mm;">Periféricos Homologados</h2>
+    <p style="font-size:9pt;color:#6b7280;margin:0;">
+      Relação de periféricos homologados para uso com os sistemas Desbravador.
+    </p>
+  </div>
+</div>`
+}
+
+function buildSectionHTML(label: string, content: string, isFirst: boolean): string {
+  const breakClass = isFirst ? '' : 'pr-page-break'
+  return `
+<div class="pr-section doc-section ${breakClass}">
+  ${label ? `<div class="pr-section-hdr"><span class="pr-section-eyebrow">Documentação</span><h2 class="pr-section-title">${label}</h2></div>` : ''}
+  <div class="pr-section-body doc-content">${content}</div>
+</div>`
+}
+
+// CSS extra para o conteúdo .vp-doc dentro do layout profissional
+const DOC_CONTENT_CSS = `
+/* ── Conteúdo extraído do .vp-doc ── */
+
+.doc-content h1 {
+  font-size: 16pt; font-weight: 700; color: #0b2545;
+  margin: 0 0 5mm; padding-bottom: 3mm;
+  border-bottom: 1.5px solid #e2e8f0;
+  break-after: avoid; page-break-after: avoid;
+}
+.doc-content h2 {
+  font-size: 12pt; font-weight: 700; color: #1f2937;
+  margin: 6mm 0 3mm; break-after: avoid; page-break-after: avoid;
+}
+.doc-content h3 {
+  font-size: 10pt; font-weight: 700; color: #374151;
+  margin: 4mm 0 2mm; break-after: avoid; page-break-after: avoid;
+}
+.doc-content h4 {
+  font-size: 9.5pt; font-weight: 600; color: #4b5563;
+  margin: 3mm 0 1.5mm; break-after: avoid; page-break-after: avoid;
+}
+
+.doc-content p  { margin: 0 0 2.5mm; font-size: 9pt; line-height: 1.65; }
+.doc-content ul, .doc-content ol { padding-left: 5mm; margin: 0 0 3mm; }
+.doc-content li { margin-bottom: 1.2mm; font-size: 9pt; }
+.doc-content strong { font-weight: 700; }
+.doc-content em     { font-style: italic; }
+
+.doc-content hr {
+  border: none; border-top: 1px solid #e2e8f0; margin: 4mm 0;
+}
+
+/* Tabelas nativas do VitePress */
+.doc-content table {
+  width: 100%; border-collapse: collapse;
+  margin: 3mm 0 5mm; font-size: 8.5pt;
+  break-inside: auto; page-break-inside: auto;
+}
+.doc-content table thead { display: table-header-group; }
+.doc-content table thead th {
+  background: #0b2545; color: #fff;
+  font-weight: 600; font-size: 7.5pt;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  padding: 3mm 4mm; text-align: left; border: none;
+}
+.doc-content table tbody tr { break-inside: avoid; page-break-inside: avoid; }
+.doc-content table tbody tr:nth-child(even) td { background: #f8fafc; }
+.doc-content table tbody td {
+  padding: 2.5mm 4mm; border-bottom: 1px solid #eef2f7;
+  color: #1f2937; vertical-align: middle; line-height: 1.4;
+}
+
+/* Código */
+.doc-content code {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 8.5pt; background: #f3f4f6; color: #1f2937;
+  padding: 0.1em 0.35em; border-radius: 3px;
+  border: 1px solid #e5e7eb;
+}
+.doc-content pre {
+  background: #f8f9fa; border: 1px solid #e5e7eb;
+  border-radius: 4px; padding: 3mm 4mm; margin: 3mm 0;
+  font-size: 8.5pt; white-space: pre-wrap; word-break: break-word;
+  break-inside: avoid; page-break-inside: avoid;
+}
+.doc-content pre code {
+  background: none; border: none; padding: 0;
+}
+
+/* Blockquotes (⚠️ / ℹ️) */
+.doc-content blockquote {
+  border-left: 4px solid #f59e0b; background: #fffbeb;
+  padding: 3mm 4mm; margin: 3mm 0;
+  border-radius: 0 4px 4px 0;
+  break-inside: avoid; page-break-inside: avoid;
+}
+.doc-content blockquote p { margin: 0; color: #78350f; }
+
+/* Custom blocks VitePress */
+.doc-content .custom-block {
+  padding: 3mm 4mm; border-radius: 4px;
+  margin: 3mm 0; border-left: 4px solid;
+  break-inside: avoid; page-break-inside: avoid;
+}
+.doc-content .custom-block-title {
+  font-weight: 700; font-size: 8.5pt; margin-bottom: 1.5mm;
+}
+.doc-content .custom-block.tip    { border-color: #10b981; background: #ecfdf5; }
+.doc-content .custom-block.tip    .custom-block-title { color: #065f46; }
+.doc-content .custom-block.info   { border-color: #3b82f6; background: #eff6ff; }
+.doc-content .custom-block.info   .custom-block-title { color: #1e40af; }
+.doc-content .custom-block.warning { border-color: #f59e0b; background: #fffbeb; }
+.doc-content .custom-block.warning .custom-block-title { color: #92400e; }
+.doc-content .custom-block.danger  { border-color: #ef4444; background: #fef2f2; }
+.doc-content .custom-block.danger  .custom-block-title { color: #991b1b; }
+
+/* SVG / Mermaid */
+.doc-content svg { max-width: 100%; height: auto; display: block; margin: 3mm auto; }
+
+/* Divisor do Anexo */
+.appendix-divider-wrap {
+  display: flex; align-items: center; min-height: 40mm;
+}
+.appendix-divider-box {
+  border-left: 5px solid #1a5fa8; padding: 4mm 6mm;
+}
+`
+
+// ── Print ─────────────────────────────────────────────────────────────
+
 async function printDoc(product: Product) {
   printing.value = product.name
-
   try {
     const [docSections, peripheralSections] = await Promise.all([
-      Promise.all(product.docPages.map((p) => fetchPageContent(p))),
+      Promise.all(product.docPages.map((p) => fetchPageContent(p.path))),
       Promise.all(peripheralPages.map((p) => fetchPageContent(p.path))),
     ])
 
-    let body = ''
-    let isFirstSection = true
+    // Cabeçalho e rodapé
+    const logoUrl = (() => {
+      const themeLogo = (site.value.themeConfig as any)?.logo
+      if (!themeLogo) return null
+      const base = (site.value.base || '/').replace(/\/$/, '')
+      return typeof themeLogo === 'string' ? `${window.location.origin}${base}${themeLogo}` : null
+    })()
 
-    docSections.forEach((content) => {
-      if (content) {
-        const cls = isFirstSection ? 'doc-section first-section' : 'doc-section'
-        body += `<section class="${cls}">${content}</section>`
-        isFirstSection = false
-      }
+    const dateStr = new Date().toLocaleDateString('pt-BR', {
+      day: '2-digit', month: 'long', year: 'numeric',
+    })
+    const dateTimeStr = new Date().toLocaleString('pt-BR', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
     })
 
-    const hasPeripherals = peripheralSections.some((s) => s !== null)
+    // Seções da documentação
+    let bodyHTML = ''
+    let isFirst = true
+    docSections.forEach((content, i) => {
+      if (!content) return
+      bodyHTML += buildSectionHTML(product.docPages[i].label, content, isFirst)
+      isFirst = false
+    })
+
+    // Anexo de periféricos
+    const hasPeripherals = peripheralSections.some(Boolean)
     if (hasPeripherals) {
-      body += `<section class="doc-section appendix-divider">
-        <div class="appendix-divider-inner">
-          <p class="appendix-label">Anexo</p>
-          <h1>Periféricos Homologados</h1>
-          <p>Relação de periféricos homologados para uso com os sistemas Desbravador.</p>
-        </div>
-      </section>`
-      peripheralSections.forEach((content) => {
-        if (content) {
-          body += `<section class="doc-section">${content}</section>`
-        }
+      bodyHTML += buildAppendixDividerHTML()
+      peripheralSections.forEach((content, i) => {
+        if (!content) return
+        bodyHTML += buildSectionHTML(peripheralPages[i].label, content, false)
       })
     }
 
-    const printWindow = window.open('', '_blank', 'width=900,height=700')
-    if (!printWindow) {
-      alert('Permita pop-ups neste site para gerar o PDF.')
-      return
-    }
+    const win = window.open('', '_blank', 'width=960,height=720')
+    if (!win) { alert('Permita pop-ups neste site para gerar o PDF.'); return }
 
-    const dateStr = new Date().toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-    })
+    const css = buildReportCSS('portrait', 'A4') + DOC_CONTENT_CSS
 
-    printWindow.document.write(`<!DOCTYPE html>
+    win.document.write(`<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>${product.name} — Documentação Técnica Desbravador</title>
-  <style>
-    @page {
-      size: A4;
-      margin: 2cm 2.5cm 2.5cm 2.5cm;
-    }
-
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      font-size: 10.5pt;
-      line-height: 1.65;
-      color: #1c1c1c;
-      background: #fff;
-    }
-
-    /* ── Capa ── */
-    .cover {
-      padding: 6rem 0 4rem;
-      border-bottom: 4px solid #1a5fa8;
-      margin-bottom: 0;
-      break-after: page;
-      page-break-after: always;
-    }
-    .cover-eyebrow {
-      font-size: 8.5pt;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: #6b7280;
-      margin-bottom: 2.5rem;
-    }
-    .cover-title {
-      font-size: 26pt;
-      font-weight: 700;
-      color: #1a5fa8;
-      line-height: 1.15;
-      margin-bottom: 1rem;
-    }
-    .cover-subtitle {
-      font-size: 11pt;
-      color: #4b5563;
-      margin-bottom: 0.4rem;
-    }
-    .cover-date {
-      margin-top: 3rem;
-      font-size: 8.5pt;
-      color: #9ca3af;
-    }
-
-    /* ── Seções de conteúdo ── */
-    .doc-section {
-      break-before: page;
-      page-break-before: always;
-      padding-top: 0.5rem;
-    }
-    .first-section {
-      break-before: auto;
-      page-break-before: auto;
-    }
-
-    /* ── Divisor do Anexo ── */
-    .appendix-divider {
-      display: flex;
-      align-items: center;
-      min-height: 60mm;
-    }
-    .appendix-divider-inner {
-      border-left: 5px solid #1a5fa8;
-      padding: 1.5rem 2rem;
-    }
-    .appendix-label {
-      font-size: 8pt;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: #1a5fa8;
-      margin-bottom: 0.5rem;
-    }
-    .appendix-divider-inner h1 {
-      font-size: 20pt;
-      color: #111827;
-      border: none;
-      padding: 0;
-      margin: 0 0 0.5rem;
-    }
-    .appendix-divider-inner p {
-      color: #6b7280;
-      font-size: 10pt;
-      margin: 0;
-    }
-
-    /* ── Tipografia ── */
-    h1 {
-      font-size: 16pt;
-      font-weight: 700;
-      color: #111827;
-      margin: 1.6rem 0 0.6rem;
-      padding-bottom: 0.4rem;
-      border-bottom: 1.5px solid #e5e7eb;
-      break-after: avoid;
-      page-break-after: avoid;
-    }
-    h2 {
-      font-size: 13pt;
-      font-weight: 700;
-      color: #1f2937;
-      margin: 1.3rem 0 0.5rem;
-      break-after: avoid;
-      page-break-after: avoid;
-    }
-    h3 {
-      font-size: 11pt;
-      font-weight: 700;
-      color: #374151;
-      margin: 1rem 0 0.35rem;
-      break-after: avoid;
-      page-break-after: avoid;
-    }
-    h4 {
-      font-size: 10.5pt;
-      font-weight: 600;
-      color: #4b5563;
-      margin: 0.8rem 0 0.3rem;
-      break-after: avoid;
-      page-break-after: avoid;
-    }
-
-    p { margin: 0.5rem 0; }
-
-    ul, ol { padding-left: 1.4rem; margin: 0.4rem 0; }
-    li { margin: 0.2rem 0; }
-    li > ul, li > ol { margin: 0.2rem 0; }
-
-    strong { font-weight: 700; }
-    em { font-style: italic; }
-
-    hr {
-      border: none;
-      border-top: 1px solid #e5e7eb;
-      margin: 1.2rem 0;
-    }
-
-    /* ── Tabelas ── */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 0.8rem 0 1rem;
-      font-size: 9.5pt;
-      break-inside: avoid;
-      page-break-inside: avoid;
-    }
-    thead { break-inside: avoid; page-break-inside: avoid; }
-    th {
-      background: #1a5fa8;
-      color: #fff;
-      padding: 0.45rem 0.65rem;
-      text-align: left;
-      font-weight: 600;
-      font-size: 9pt;
-      border: 1px solid #1a5fa8;
-    }
-    td {
-      padding: 0.4rem 0.65rem;
-      border: 1px solid #d1d5db;
-      vertical-align: top;
-      line-height: 1.5;
-    }
-    tr { break-inside: avoid; page-break-inside: avoid; }
-    tr:nth-child(even) td { background: #f9fafb; }
-    tr:hover td { background: inherit; }
-
-    /* ── Código ── */
-    code {
-      font-family: 'SFMono-Regular', 'Cascadia Code', Consolas, 'Liberation Mono', Menlo, monospace;
-      font-size: 9pt;
-      background: #f3f4f6;
-      color: #1f2937;
-      padding: 0.1em 0.35em;
-      border-radius: 3px;
-      border: 1px solid #e5e7eb;
-    }
-    pre {
-      background: #f8f9fa;
-      border: 1px solid #e5e7eb;
-      border-radius: 5px;
-      padding: 0.85rem 1rem;
-      margin: 0.75rem 0;
-      font-size: 9pt;
-      white-space: pre-wrap;
-      word-break: break-word;
-      break-inside: avoid;
-      page-break-inside: avoid;
-    }
-    pre code {
-      background: none;
-      border: none;
-      padding: 0;
-      font-size: inherit;
-    }
-
-    /* ── Blockquotes (⚠️ / ℹ️) ── */
-    blockquote {
-      border-left: 4px solid #f59e0b;
-      background: #fffbeb;
-      padding: 0.6rem 1rem;
-      margin: 0.75rem 0;
-      border-radius: 0 4px 4px 0;
-      break-inside: avoid;
-      page-break-inside: avoid;
-    }
-    blockquote p { margin: 0; color: #78350f; }
-
-    /* ── Custom blocks VitePress ── */
-    .custom-block {
-      padding: 0.7rem 1rem;
-      border-radius: 5px;
-      margin: 0.75rem 0;
-      border-left: 4px solid;
-      break-inside: avoid;
-      page-break-inside: avoid;
-    }
-    .custom-block-title {
-      font-weight: 700;
-      font-size: 9.5pt;
-      margin-bottom: 0.3rem;
-    }
-    .custom-block.tip    { border-color: #10b981; background: #ecfdf5; }
-    .custom-block.tip    .custom-block-title { color: #065f46; }
-    .custom-block.info   { border-color: #3b82f6; background: #eff6ff; }
-    .custom-block.info   .custom-block-title { color: #1e40af; }
-    .custom-block.warning { border-color: #f59e0b; background: #fffbeb; }
-    .custom-block.warning .custom-block-title { color: #92400e; }
-    .custom-block.danger  { border-color: #ef4444; background: #fef2f2; }
-    .custom-block.danger  .custom-block-title { color: #991b1b; }
-
-    /* ── Links ── */
-    a { color: #1a5fa8; text-decoration: none; }
-
-    /* ── SVG / Mermaid ── */
-    svg {
-      max-width: 100%;
-      height: auto;
-      display: block;
-      margin: 0.75rem auto;
-    }
-    .mermaid { text-align: center; }
-
-    /* ── Ocultar no print: links de âncora, botão editar ── */
-    @media print {
-      .header-anchor { display: none; }
-      a[href]::after { content: none !important; }
-      .doc-section { break-before: page; page-break-before: always; }
-      .first-section { break-before: auto; page-break-before: auto; }
-      h1, h2, h3, h4 { break-after: avoid; page-break-after: avoid; }
-      table, pre, blockquote, .custom-block {
-        break-inside: avoid;
-        page-break-inside: avoid;
-      }
-    }
-  </style>
+  <style>${css}</style>
 </head>
 <body>
-  <div class="cover">
-    <p class="cover-eyebrow">Desbravador Software Ltda. — Documentação Técnica</p>
-    <h1 class="cover-title">${product.name}</h1>
-    <p class="cover-subtitle">Requisitos de hardware, software e configuração</p>
-    <p class="cover-subtitle">Inclui periféricos homologados como anexo</p>
-    <p class="cover-date">Gerado em ${dateStr}</p>
+  ${buildHeaderHTML(product, logoUrl, dateTimeStr)}
+  ${buildFooterHTML()}
+  ${buildCoverHTML(product, logoUrl, dateStr)}
+  <div class="pr-body">
+    ${bodyHTML}
   </div>
-  ${body}
   <script>
-    window.onload = function () {
-      setTimeout(function () { window.print(); }, 500)
-    }
+    window.addEventListener('load', function () {
+      setTimeout(function () { window.print() }, 600)
+    })
   <\/script>
 </body>
 </html>`)
-    printWindow.document.close()
+    win.document.close()
   } finally {
     printing.value = null
   }
