@@ -8,15 +8,7 @@ Aqui você encontra os requisitos de hardware, software e configuração para to
 
 ## Sistemas disponíveis
 
-| Sistema | Instalação Local | Instalação Cloud |
-|---------|:-:|:-:|
-| [Desbravador 4.1 / 3.1 / 3.0 Smart](desbravador-41/local/requisitos-hardware.md) | ✅ | ✅ |
-| Desbravador Light 3 | 🚧 | — |
-| Desbravador Light Easy | 🚧 | — |
-| Desbravador Web | 🚧 | — |
-| Gas Station | 🚧 | — |
-
-> 🚧 Em elaboração
+<HomeTable />
 
 ---
 
@@ -24,9 +16,11 @@ Aqui você encontra os requisitos de hardware, software e configuração para to
 
 Páginas compartilhadas entre todos os sistemas:
 
-- 🔒 [Fechaduras magnéticas](/_shared/fechaduras-homologadas.md)
-- 🖨️ [Impressoras](/_shared/impressoras-homologadas.md)
-- 💳 [Pinpads](/_shared/pinpads-homologados.md)
+- 🔒 [Fechaduras e tarifadores homologados](/perifericos/fechaduras-homologadas)
+- 🖨️ [Impressoras fiscais e não fiscais homologadas](/perifericos/impressoras-homologadas)
+- 💳 [Pinpads homologados](/perifericos/pinpads-homologados)
+- 💳 [Sistemas de TEF homologados](/perifericos/tef-homologados)
+- 📱 [Dispositivos iPDV e PDV homologados](/perifericos/dispositivos-ipdv-pdv)
 
 ---
 
