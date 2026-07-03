@@ -244,7 +244,7 @@ function buildPrintCSS(orientation: string, paperSize: string): string {
 
   /* ── Tipografia base ── */
   .pl-document {
-    font-size: 10.5pt !important;
+    font-size: 12px !important;
     line-height: 1.6 !important;
     color: #111827 !important;
   }
@@ -338,7 +338,7 @@ function handlePrint() {
 /* Moldura do documento na tela */
 .pl-document {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  font-size: 10.5pt;
+  font-size: 12px;
   line-height: 1.65;
   color: #111827;
   background: #fff;
