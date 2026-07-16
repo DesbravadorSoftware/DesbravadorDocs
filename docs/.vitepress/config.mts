@@ -175,6 +175,7 @@ export default withMermaid(
               { text: 'Pinpads', link: '/perifericos/pinpads-homologados' },
               { text: 'Sistemas de TEF', link: '/perifericos/tef-homologados' },
               { text: 'Dispositivos iPDV e PDV', link: '/perifericos/dispositivos-ipdv-pdv' },
+              { text: 'Desbravador KDS', link: '/perifericos/kds-desbravador' },
             ],
           },
         ],

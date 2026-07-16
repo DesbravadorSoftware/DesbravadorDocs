@@ -21,6 +21,7 @@ Páginas compartilhadas entre todos os sistemas:
 - 💳 [Pinpads homologados](/perifericos/pinpads-homologados)
 - 💳 [Sistemas de TEF homologados](/perifericos/tef-homologados)
 - 📱 [Dispositivos iPDV e PDV homologados](/perifericos/dispositivos-ipdv-pdv)
+- 🍳 [Desbravador KDS — requisitos de hardware e infraestrutura](/perifericos/kds-desbravador)
 
 ---
 

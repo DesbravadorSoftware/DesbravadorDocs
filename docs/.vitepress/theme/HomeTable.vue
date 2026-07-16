@@ -116,6 +116,7 @@ const peripheralPages = [
   { path: '/perifericos/tef-homologados',         label: 'Sistemas de TEF Homologados'         },
   { path: '/perifericos/dispositivos-ipdv-pdv',   label: 'Dispositivos iPDV e PDV Homologados' },
   { path: '/perifericos/sat-mfe-homologados',     label: 'SAT / MFE Homologados'               },
+  { path: '/perifericos/kds-desbravador',         label: 'Desbravador KDS'                     },
 ]
 
 const printing = ref<string | null>(null)
