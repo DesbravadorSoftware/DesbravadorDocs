@@ -6,7 +6,21 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
       "Bash(chmod +x *)",
       "Bash(pkill -f \"vitepress dev\")",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(grep \"\\\\.md$\")",
+      "Bash(git log *)",
+      "Bash(git fetch *)",
+      "Bash(grep -iE \"^jsdom$|^cheerio$|^html-to-text$\")",
+      "Bash(node *)",
+      "Bash(python3 *)",
+      "Bash(grep -i \"^vue$\")",
+      "Bash(git checkout *)",
+      "Bash(git clean *)",
+      "Bash(git -C /Users/andressacelant/Documents/Desbravador/Projetos/DesbravadorDocs status --short docs/perifericos docs/desbravador-enterprise docs/desbravador-posfast docs/infraestrutura)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git pull *)"
     ]
   }
 }
